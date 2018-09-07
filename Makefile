@@ -13,14 +13,12 @@ fmt:
 	go fmt starlinks/...
 
 dep: bin/govendor
-	pushd $(GOPATH)/src 2>&1 >/dev/null ; \
+	cd src; \
 	../bin/govendor sync; \
-	popd 2>&1 >/dev/null
 
 vendor-init:
-	pushd $(GOPATH)/src 2>&1 >/dev/null; \
+	cd src; \
 	../bin/govendor init; \
-	popd 2>&1 >/dev/null
 
 bin/govendor: 
 ifeq ($(VENDOR_BIN),)
@@ -31,9 +29,8 @@ else
 endif
 
 list-deps: bin/govendor
-	@pushd $(GOPATH)/src 2>&1 >/dev/null; \
+	cd src;\
 	../bin/govendor list;\
-	popd 2>&1 >/dev/null
 
 new-dep: bin/govendor
 ifeq ($(PACKAGE),)
@@ -41,9 +38,8 @@ ifeq ($(PACKAGE),)
 	@echo Usage: make new-deps PACKAGE='<path of new package>'
 else
 	@echo bin/govendor fetch $(PACKAGE)
-	@pushd $(GOPATH)/src 2>&1 >/dev/null; \
-	../bin/govendor fetch $(PACKAGE);\
-	popd 2>&1 >/dev/null
+	cd src;\
+	../bin/govendor fetch $(PACKAGE);
 endif
 
 clean:
