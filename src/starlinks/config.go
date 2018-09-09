@@ -39,12 +39,12 @@ func parseNetPath(path string) (string, string, error) {
 		domain = "tcp"
 		address = parsed_path[0]
 	case 2:
-		if parsed_path[0] == "" {
+		if strings.Count(parsed_path[0], ".") == 3 {
 			domain = "tcp"
+			address = path
 		} else {
-			domain = parsed_path[0]
+			address = parsed_path[1]
 		}
-		address = parsed_path[1]
 	default:
 		err = errors.New("Not a valid network path:" + path)
 	}
@@ -67,8 +67,8 @@ func parseArgs() (*Options, error) {
 
 	api_listen := flag.String("api_listen", "127.0.0.1:23278", "Bind address of RESTful config API.")
 	//api_domain := flag.String("api_domai")
-	redis_dail := flag.String("redis_dail", "127.0.0.1:2379", "Redis cache server.")
-	sql_dail := flag.String("sql_dail", "unix:/var/run/mysql.sock", "SQL storage server")
+	redis_dail := flag.String("redis_dail", "127.0.0.1:6379", "Redis cache server.")
+	sql_dail := flag.String("sql_dsn", "starlinks:123456@unix(/run/mysqld/mysqld.sock)/starlinks", "SQL storage server")
 	sql_type := flag.String("sql_type", "mysql", "SQL storage type.")
 	secret := flag.String("secret", "starstudio", "Secret string for mapping ID.")
 	help := flag.Bool("help", false, "Print help information.")
@@ -86,7 +86,7 @@ func parseArgs() (*Options, error) {
 		}
 		return nil, errors.New("Link Server: " + err.Error())
 	}
-	if opt.APIListen, opt.APINetType, err = parseNetPath(*api_listen); err != nil {
+	if opt.APINetType, opt.APIListen, err = parseNetPath(*api_listen); err != nil {
 		if opt.NetType != "tcp" {
 			return nil, fmt.Errorf("API Server: http cannot run over %v", opt.APINetType)
 		}

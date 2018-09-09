@@ -1,6 +1,7 @@
 package starlinks
 
 import (
+	"crypto/cipher"
 	"crypto/des"
 	"encoding/base64"
 	"encoding/binary"
@@ -8,6 +9,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	_ "github.com/go-sql-driver/mysql"
+	"golang.org/x/crypto/scrypt"
 	"net/http"
 )
 
@@ -48,12 +50,20 @@ type BackendFactory func(string) (LinkStorage, error)
 
 var (
 	StorageBackend = make(map[string]BackendFactory)
+	SALT           = []byte{0x12, 0x28, 0xa1, 0x90, 0x01, 0x4a, 0x35, 0x7b}
 )
 
 type LinkID uint64 // Node: the zero value indicates invalid. // BigEndian
 
-func (id *LinkID) Transform(map_scecrt []byte) error {
-	blk, err := des.NewCipher(map_scecrt)
+func (id *LinkID) Transform(map_secret []byte) error {
+	var err error
+	var key []byte
+	var blk cipher.Block
+	key, err = scrypt.Key(map_secret, SALT, 1<<15, 8, 1, 8)
+	if err != nil {
+		return err
+	}
+	blk, err = des.NewCipher(key)
 	if err != nil {
 		return err
 	}
@@ -71,7 +81,14 @@ func (id *LinkID) ToString() string {
 }
 
 func (id *LinkID) ReverseTransform(map_secret []byte) error {
-	blk, err := des.NewCipher(map_secret)
+	var err error
+	var key []byte
+	var blk cipher.Block
+	key, err = scrypt.Key(map_secret, SALT, 1<<15, 8, 1, 8)
+	if err != nil {
+		return err
+	}
+	blk, err = des.NewCipher(key)
 	if err != nil {
 		return err
 	}
@@ -79,7 +96,7 @@ func (id *LinkID) ReverseTransform(map_secret []byte) error {
 	src := make([]byte, 8)
 	binary.BigEndian.PutUint64(mapped, uint64(*id))
 	copy(src, mapped)
-	blk.Decrypt(mapped, src)
+	blk.Decrypt(src, mapped)
 	*id = LinkID(binary.BigEndian.Uint64(src))
 	return nil
 }
@@ -109,6 +126,7 @@ func NewLinkRequestHandler(redis, sql, sqltype, secret string) (*LinkRequestHand
 	var err error
 	var ok bool
 	var factory BackendFactory
+	var cache CacheStorage
 
 	hdr := new(LinkRequestHandler)
 	if hdr.redis_path, hdr.redis_net_type, err = parseNetPath(redis); err != nil {
@@ -123,6 +141,12 @@ func NewLinkRequestHandler(redis, sql, sqltype, secret string) (*LinkRequestHand
 	if hdr.storage, err = factory(sql); err != nil {
 		return nil, err
 	}
+	if cache, err = NewRedisLinkCache(redis); err != nil {
+		return nil, err
+	}
+	hdr.storage = NewCachedStorage(cache, hdr.storage)
+	hdr.secret = secret
+	hdr.sql_path = sql
 
 	return hdr, nil
 }
@@ -135,7 +159,7 @@ func (hdr *LinkRequestHandler) ServeHTTP(writer http.ResponseWriter, request *ht
 	}
 
 	// Try decode
-	id, err := FromTextEncodedBinary(request.RequestURI)
+	id, err := FromTextEncodedBinary(request.RequestURI[1:])
 	if err != nil {
 		log.WithFields(log.Fields{
 			"event": "request",
@@ -159,6 +183,10 @@ func (hdr *LinkRequestHandler) ServeHTTP(writer http.ResponseWriter, request *ht
 			"id":    id,
 		}).Errorf("Storage failure: %v", err.Error())
 		return_error()
+		return
+	}
+	if link == "" {
+		http.NotFound(writer, request)
 		return
 	}
 

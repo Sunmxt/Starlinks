@@ -4,10 +4,10 @@ export GOPATH:=$(shell pwd)
 VENDOR_BIN:=$(shell which govendor 2>/dev/null)
 
 debug: dep fmt
-	go install -gcflags="-N -l" starlinks/starlinks
+	go install -gcflags '-N -l' starlinks/starlinks
 
 release: dep fmt
-	go install -ldflags="-s" starlinks/starlinks
+	go install -ldflags "-s" starlinks/starlinks
 
 fmt:
 	go fmt starlinks/...

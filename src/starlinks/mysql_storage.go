@@ -7,14 +7,14 @@ import (
 
 const (
 	SQL_LINK_MAP = `
-        CREATE TABLE IF NOT EXIST LINKS(
-            ID BIGINT PRIMARY KEY UNIQUE NOT NULL,
+        CREATE TABLE IF NOT EXISTS LINKS(
+            ID BIGINT PRIMARY KEY UNIQUE NOT NULL AUTO_INCREMENT,
             URL VARCHAR(32) UNIQUE NOT NULL, 
-            COUNT BIGINT NOT NULL,
+            COUNT BIGINT NOT NULL
         )`
 
 	SQL_REQ_LOG = `
-        CREATE TABLE IF NOT EXIST REQ_LOG(
+        CREATE TABLE IF NOT EXISTS REQ_LOG(
             ID BIGINT PRIMARY KEY UNIQUE NOT NULL,
             REF_ID BIGINT UNIQUE NOT NULL,
             TIME VARCHAR(16) NOT NULL,
@@ -25,10 +25,10 @@ const (
         )
     `
 
-	SQL_QUERY_LINK  = "SELECT URL FROM LINKS WHERE (ID = %s)"
-	SQL_UPDATE_CNT  = "UPDATE LINKS SET COUNT=COUNT+1 WHERE (ID = %s)"
-	SQL_ADD_LINK    = "INSERT INTO LINKS(URL) VALUE (%s)"
-	SQL_REMOVE_LINK = "DELETE FROM LINKS WHERE (ID = %s)"
+	SQL_QUERY_LINK  = "SELECT URL FROM LINKS WHERE (ID = ?)"
+	SQL_UPDATE_CNT  = "UPDATE LINKS SET COUNT=COUNT+1 WHERE (ID = ?)"
+	SQL_ADD_LINK    = "INSERT INTO LINKS(URL) VALUE (?)"
+	SQL_REMOVE_LINK = "DELETE FROM LINKS WHERE (ID = ?)"
 )
 
 type MySQLLinkStorage struct {
@@ -44,7 +44,9 @@ func NewMySQLLinkStorage(dsn string) (LinkStorage, error) {
 	ls := &MySQLLinkStorage{
 		db: sql,
 	}
-	ls.InitTables()
+	if err := ls.InitTables(); err != nil {
+		return nil, err
+	}
 
 	return ls, nil
 }
@@ -54,9 +56,12 @@ func (sto *MySQLLinkStorage) QueryLink(id LinkID) (string, error) {
 	var err error
 	var url string
 
-	row = sto.db.QueryRow(SQL_LINK_MAP, id.ToString())
-
-	if err != nil || row.Scan(&url) != nil {
+	row = sto.db.QueryRow(SQL_QUERY_LINK, id.ToString())
+	err = row.Scan(&url)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	if err != nil {
 		return "", err
 	}
 	if url == "" {

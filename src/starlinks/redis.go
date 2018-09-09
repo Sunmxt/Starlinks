@@ -9,10 +9,13 @@ import (
 const (
 	DEFAULT_KEY_BASE = "starlink_cache"
 
+	// map_set, id, count_set
 	QUERY_SCRIPT = `
         local result = redis.call('hget', KEYS[1], KEYS[2])
         if result ~= nil then
             redis.call('zincrby', KEYS[3], 1, KEYS[2])
+        else
+            result = ''
         end
         return result
     `
@@ -46,6 +49,7 @@ const (
 	ADD_LINK_SCRIPT = `
         redis.call('zadd', KEYS[2], 0, KEYS[3])
         redis.call('hset', KEYS[1], KEYS[3], KEYS[4])
+        return 1
     `
 
 	// map_set, count_set, id1, link1, id2, link2, ....
@@ -73,7 +77,7 @@ type RedisLinkCache struct {
 	key_base     string
 }
 
-func NewRedisLinkCache(dsn string) (*RedisLinkCache, error) {
+func NewRedisLinkCache(dsn string) (CacheStorage, error) {
 	domain, path, _ := parseNetPath(dsn)
 	if domain != "tcp" {
 		return nil, errors.New("Redis should be connected via TCP.")
@@ -149,7 +153,7 @@ func (cache *RedisLinkCache) AddLink(id LinkID, url string) error {
 	return err
 }
 
-func (cache *RedisLinkCache) AddLinks(url_map map[LinkID]string) ([]LinkID, error) {
+func (cache *RedisLinkCache) AddLinks(url_map map[LinkID]string) error {
 	args := make([]string, len(url_map))
 	i := 0
 	for id, link := range url_map {
@@ -159,7 +163,7 @@ func (cache *RedisLinkCache) AddLinks(url_map map[LinkID]string) ([]LinkID, erro
 	}
 	cmd := cache.client.Eval(ADD_LINKS_SCRIPT, append([]string{cache.key_base + "map", cache.key_base + "cnt"}, args...))
 	_, err := cmd.Result()
-	return nil, err
+	return err
 }
 
 func (cache *RedisLinkCache) RemoveLink(id LinkID) error {
