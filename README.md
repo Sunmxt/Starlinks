@@ -2,7 +2,7 @@
 
 短链接服务
 
-
+***Current state: Prototype. Maintained but Unstable.*** *Be cautious to use in production.*
 
 ```bash
 make
