@@ -12,19 +12,18 @@ const (
 	// map_set, id, count_set
 	QUERY_SCRIPT = `
         local result = redis.call('hget', KEYS[1], KEYS[2])
-        if result ~= nil then
+        if result ~= false then
             redis.call('zincrby', KEYS[3], 1, KEYS[2])
-        else
-            result = ''
+            return result
         end
-        return result
+        return ''
     `
 
 	QUERY_BATCH_SCRIPT = `
         local results={}
         for i=3,#KEYS-1,1 do
             results[i] = redis.call('hget', KEYS[1], KEYS[i])
-            if results[i] != nil then
+            if results[i] != false then
                 redis.call('zincrby', KEYS[2], 1, KEYS[i])
             end
         end

@@ -33,18 +33,20 @@ func parseNetPath(path string) (string, string, error) {
 	var err error
 	var domain, address string
 
-	parsed_path := strings.SplitN(path, ":", 2)
+	parsed_path := strings.SplitN(path, "#", 2)
 	switch len(parsed_path) {
 	case 1:
 		domain = "tcp"
 		address = parsed_path[0]
 	case 2:
-		if strings.Count(parsed_path[0], ".") == 3 {
-			domain = "tcp"
-			address = path
-		} else {
-			address = parsed_path[1]
-		}
+		domain = parsed_path[0]
+		address = parsed_path[1]
+		//if strings.Count(parsed_path[0], ".") == 3 {
+		//	domain = "tcp"
+		//	address = path
+		//} else {
+		//	address = parsed_path[1]
+		//}
 	default:
 		err = errors.New("Not a valid network path:" + path)
 	}
