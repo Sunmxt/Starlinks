@@ -3,6 +3,7 @@ package starlinks
 import (
 	"errors"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -110,13 +111,17 @@ func (hdr *APIHandler) add_link(c *gin.Context) {
 
 	links, err := process_params()
 	if err != nil {
-		fmt.Printf(err.Error())
+		log.WithFields(log.Fields{
+			"event": "api",
+		}).Errorf("Form Failure: %v, %v", c.Request.RequestURI, err.Error())
 		return
 	}
 
 	id, err = hdr.storage.AddLink(links)
 	if err != nil {
-		fmt.Printf(err.Error())
+		log.WithFields(log.Fields{
+			"event": "api",
+		}).Errorf("Link insertion failure: %v, %v", c.Request.RequestURI, err.Error())
 		return
 	}
 	response.ID = id.ToString()
