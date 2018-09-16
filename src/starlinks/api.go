@@ -110,11 +110,13 @@ func (hdr *APIHandler) add_link(c *gin.Context) {
 
 	links, err := process_params()
 	if err != nil {
+		fmt.Printf(err.Error())
 		return
 	}
 
 	id, err = hdr.storage.AddLink(links)
 	if err != nil {
+		fmt.Printf(err.Error())
 		return
 	}
 	response.ID = id.ToString()

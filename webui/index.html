@@ -1,0 +1,41 @@
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+        <link type="text/css" rel="stylesheet" href="css/index.css" />
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+        <script src="js/index.js"></script>
+    </head>
+    <body>
+        <div id="PageContainer">
+            <div class="content_box move_down">
+                <div id="Content">
+                    <div id="Title">星辰短链接</div>
+                    <div class="ver-sep"></div>
+                    <div id="InputBoxContainer">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">链接:</span>
+                            </div>
+                            <input id="LongURL" v-model="TargetURL" type="text" class="form-control" placeholder="例：http://www.starstudio.org" >
+                        </div>
+                        <div id="InputButtonGroup">
+                            <div class="align-right">
+                                <button id="clear-url" v-on:click="ClearURL()" type="button" class="btn btn-outline-secondary">清空</button>
+                                <button id="append-url" v-on:click="AppendURL()" type="button" class="btn btn-outline-info">添加</button>
+                            </div>
+                        </div>
+                        <div id="ResultBox">
+                            <transition name="slide-fade">
+                                <div id="prompt-info" v-if="show" :class="prompt_class">{{ message }} </div>
+                            </transition>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

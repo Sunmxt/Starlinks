@@ -171,7 +171,7 @@ func (hdr *LinkRequestHandler) ServeHTTP(writer http.ResponseWriter, request *ht
 		log.WithFields(log.Fields{
 			"event":      "request",
 			"encoded_id": id,
-		}).Errorf("Cannot decode id with request: %v", request.RequestURI)
+		}).Errorf("Cannot decode id with request: %v, %v", request.RequestURI, err.Error())
 		return_error()
 		return
 	}

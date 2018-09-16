@@ -1,0 +1,123 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+    name: pv1
+spec:
+    capacity: 
+        storage: 1Gi
+    accessModes:
+    - ReadWriteOnce
+    persistentVolumeReclaimPolicy: Retain
+    storageClassName: starlinks-pv
+    hostPath:
+        path: /home/www/starlinks/data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: starlinks-pvc
+    namespace: default
+spec:
+    accessModes:
+    - ReadWriteOnce
+    storageClassName: starlinks-pv
+    resources:
+        requests:
+            storage: 500Mi
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: starlinks-redis-deploy
+    labels:
+       app: "starlinks-redis"
+    namespace: default
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: "starlinks-redis-pod"
+    template:
+        metadata:
+            name: "starlinks-redis-pod"
+            labels:
+                app: "starlinks-redis-pod"
+        spec:
+            containers:
+            - name: starlinks-redis
+              image: docker.io/redis:4-alpine
+              imagePullPolicy: IfNotPresent
+              ports:
+              - containerPort: 6379
+                protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: starlinks-cache
+    labels:
+        app: "starlinks-cache"
+    namespace: default
+spec:
+    ports:
+        - port: 6379
+          targetPort: 6379
+    selector:
+        app: "starlinks-redis-pod"
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: starlinks-mysql
+    labels:
+        app: "starlinks-storage"
+    namespace: default
+spec:
+    replicas: 1
+    template:
+        metadata:
+            name: "starlinks-mysql"
+            labels:
+                app: "starlinks-mysql"
+        spec:
+            containers:
+            - name: starlinks-mysql
+              image: docker.io/mysql:5.5
+              imagePullPolicy: IfNotPresent
+              ports:
+              - containerPort: 3306
+                protocol: TCP
+              volumeMounts:
+              - mountPath: /var/lib/mysql
+                subPath: starlinks_mysql
+                name: starlinks-mysql-db
+              env:
+              - name: MYSQL_ROOT_PASSWORD
+                value: "123456"
+              - name: MYSQL_USER
+                value: "starlinks"
+              - name: MYSQL_PASSWORD
+                value: "starlinks"
+              - name: MYSQL_DATABASE
+                value: "starlinks"
+            volumes:
+            - persistentVolumeClaim:
+                claimName: starlinks-pvc
+              name: starlinks-mysql-db
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: starlinks-mysql
+    labels:
+        app: "starlinks-db"
+    namespace: default
+spec:
+    ports:
+        - port: 3306
+          targetPort: 3306
+    selector:
+        app: "starlinks-redis-storage" 
+---
+
